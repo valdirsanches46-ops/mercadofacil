@@ -1,0 +1,3199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Supermercado - Lista de Compras Compartilhada</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --cor-primaria: #4CAF50;
+            --cor-secundaria: #2196F3;
+            --cor-danger: #f44336;
+            --cor-warning: #ff9800;
+            --cor-fundo: #f5f5f5;
+            --cor-borda: #ddd;
+            --sombra: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            max-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--cor-primaria) 0%, var(--cor-secundaria) 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .status-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        .status-conexao {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            opacity: 0.9;
+        }
+
+        .status-conexao.online {
+            color: #90EE90;
+        }
+
+        .status-conexao.offline {
+            color: #FFB6C6;
+        }
+
+        .usuario-info {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .usuario-info:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .btn-editar-usuario {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .btn-editar-usuario:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .conteudo {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .secao-mercado-ativo {
+            background: linear-gradient(135deg, #FF9800, #FFC107);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: var(--sombra);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mercado-info {
+            flex: 1;
+        }
+
+        .mercado-titulo {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .mercado-nome {
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-trocar-mercado {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+            white-space: nowrap;
+        }
+
+        .btn-trocar-mercado:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .secao-orcamento {
+            background: linear-gradient(135deg, #4CAF50, #2196F3);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: var(--sombra);
+        }
+
+        .orcamento-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .orcamento-titulo {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .btn-editar-orcamento {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .btn-editar-orcamento:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .orcamento-valores {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .orcamento-item {
+            text-align: center;
+        }
+
+        .orcamento-valor {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .orcamento-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .barra-progresso {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .barra-progresso-preenchida {
+            height: 100%;
+            background: white;
+            transition: width 0.3s ease;
+        }
+
+        .barra-progresso-preenchida.alerta {
+            background: #FFC107;
+        }
+
+        .barra-progresso-preenchida.perigo {
+            background: #FF5722;
+        }
+
+        .secao-entrada {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--cor-borda);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--cor-primaria);
+        }
+
+        .secao-entrada input[type="text"] {
+            padding-right: 40px;
+        }
+
+        .btn-sugestoes {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--cor-primaria);
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .dropdown-sugestoes {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid var(--cor-primaria);
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+            margin-top: 5px;
+            box-shadow: var(--sombra);
+        }
+
+        .dropdown-sugestoes.ativo {
+            display: block;
+        }
+
+        .dropdown-sugestoes li {
+            list-style: none;
+            padding: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid var(--cor-borda);
+        }
+
+        .dropdown-sugestoes li:hover {
+            background: var(--cor-fundo);
+        }
+
+        .secao-campos {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .secao-campos-unidade {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-adicionar {
+            background: var(--cor-primaria);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            height: 48px;
+        }
+
+        .btn-adicionar:hover {
+            background: #45a049;
+        }
+
+        .btn-adicionar:active {
+            transform: scale(0.95);
+        }
+
+        .abas {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--cor-borda);
+            overflow-x: auto;
+        }
+
+        .aba {
+            padding: 10px 15px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            color: #999;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .aba.ativa {
+            color: var(--cor-primaria);
+            border-bottom-color: var(--cor-primaria);
+        }
+
+        .lista-items {
+            list-style: none;
+        }
+
+        .item-compra {
+            background: var(--cor-fundo);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid var(--cor-primaria);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .item-compra.comprado {
+            background: #f0f0f0;
+            border-left-color: #999;
+            opacity: 0.7;
+        }
+
+        .item-compra.comprado .item-nome {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-nome {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .item-detalhes {
+            font-size: 13px;
+            color: #666;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .item-categoria {
+            display: inline-block;
+            background: var(--cor-secundaria);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .item-usuario {
+            display: inline-block;
+            background: var(--cor-warning);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .item-mercado {
+            display: inline-block;
+            background: #9C27B0;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .item-acoes {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icone {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            transition: transform 0.2s;
+            padding: 8px;
+        }
+
+        .btn-icone:hover {
+            transform: scale(1.2);
+        }
+
+        .btn-editar {
+            color: var(--cor-warning);
+        }
+
+        .btn-deletar {
+            color: var(--cor-danger);
+        }
+
+        .lista-vazia {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .lista-vazia i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--cor-primaria), var(--cor-secundaria));
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-valor {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+        }
+
+        .modal.ativo {
+            display: flex;
+        }
+
+        .modal-conteudo {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+            margin: auto;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--cor-primaria);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .modal-acoes {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-primario,
+        .btn-secundario {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-primario {
+            background: var(--cor-primaria);
+            color: white;
+        }
+
+        .btn-primario:hover {
+            background: #45a049;
+        }
+
+        .btn-secundario {
+            background: var(--cor-borda);
+            color: #333;
+        }
+
+        .btn-secundario:hover {
+            background: #ccc;
+        }
+
+        .barra-inferior {
+            background: var(--cor-fundo);
+            padding: 15px 20px;
+            border-top: 2px solid var(--cor-borda);
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+
+        .btn-acao {
+            flex: 1;
+            min-width: 100px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 12px;
+        }
+
+        .btn-limpar {
+            background: var(--cor-danger);
+            color: white;
+        }
+
+        .btn-limpar:hover {
+            background: #da190b;
+        }
+
+        .btn-compartilhar {
+            background: var(--cor-secundaria);
+            color: white;
+        }
+
+        .btn-compartilhar:hover {
+            background: #0b7dda;
+        }
+
+        .btn-relatorio {
+            background: #9C27B0;
+            color: white;
+        }
+
+        .btn-relatorio:hover {
+            background: #7B1FA2;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            animation: slideInRight 0.3s ease;
+            z-index: 300;
+            max-width: 300px;
+        }
+
+        .toast.sucesso {
+            background: var(--cor-primaria);
+        }
+
+        .toast.erro {
+            background: var(--cor-danger);
+        }
+
+        .toast.info {
+            background: var(--cor-secundaria);
+        }
+
+        .toast.alerta {
+            background: var(--cor-warning);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        .campo-compartilhamento {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .campo-compartilhamento input {
+            grid-column: 1 / -1;
+        }
+
+        .btn-copiar {
+            background: var(--cor-secundaria);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-copiar:hover {
+            background: #0b7dda;
+        }
+
+        .usuarios-online {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .usuario-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--cor-fundo);
+            border-radius: 8px;
+        }
+
+        .status-online {
+            width: 12px;
+            height: 12px;
+            background: #4CAF50;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .abas-modal {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--cor-borda);
+            overflow-x: auto;
+        }
+
+        .aba-modal {
+            padding: 10px 15px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            color: #999;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .aba-modal.ativa {
+            color: var(--cor-primaria);
+            border-bottom-color: var(--cor-primaria);
+        }
+
+        .conteudo-aba-modal {
+            display: none;
+        }
+
+        .conteudo-aba-modal.ativo {
+            display: block;
+        }
+
+        .sinc-info {
+            font-size: 12px;
+            color: #666;
+            padding: 10px;
+            background: var(--cor-fundo);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .relatorio-container {
+            background: var(--cor-fundo);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .grafico-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .botoes-relatorio {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-exportar {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-pdf {
+            background: #E74C3C;
+            color: white;
+        }
+
+        .btn-pdf:hover {
+            background: #C0392B;
+        }
+
+        .btn-txt {
+            background: #34495E;
+            color: white;
+        }
+
+        .btn-txt:hover {
+            background: #2C3E50;
+        }
+
+        .relatorio-info {
+            font-size: 12px;
+            color: #666;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            margin-top: 10px;
+            border-left: 3px solid var(--cor-primaria);
+        }
+
+        #relatorioContent {
+            max-height: 400px;
+            overflow-y: auto;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .relatorio-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--cor-borda);
+            font-size: 14px;
+        }
+
+        .relatorio-item:last-child {
+            border-bottom: none;
+        }
+
+        .relatorio-titulo {
+            font-weight: bold;
+            color: var(--cor-primaria);
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--cor-primaria);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            background: var(--cor-primaria);
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .chart-wrapper {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .campos-duplos {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .info-usuario {
+            background: linear-gradient(135deg, var(--cor-primaria), var(--cor-secundaria));
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .info-usuario-nome {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .info-usuario-email {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .aviso-orcamento {
+            padding: 12px;
+            background: #FFF3CD;
+            border: 1px solid #FFE69C;
+            border-radius: 8px;
+            color: #856404;
+            margin-bottom: 15px;
+            font-size: 13px;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .aviso-orcamento.alerta {
+            display: block;
+            background: #FFF3CD;
+            border-color: #FFE69C;
+            color: #856404;
+        }
+
+        .aviso-orcamento.perigo {
+            display: block;
+            background: #F8D7DA;
+            border-color: #F5C6CB;
+            color: #721C24;
+        }
+
+        .modal-escolher-mercado {
+            display: grid;
+            gap: 10px;
+        }
+
+        .opcao-mercado {
+            padding: 15px;
+            border: 2px solid var(--cor-borda);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .opcao-mercado:hover {
+            border-color: var(--cor-primaria);
+            background: var(--cor-fundo);
+        }
+
+        .opcao-mercado.selecionado {
+            border-color: var(--cor-primaria);
+            background: var(--cor-primaria);
+            color: white;
+        }
+
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 22px;
+            }
+
+            .btn-editar-usuario {
+                position: static;
+                transform: none;
+                margin-top: 10px;
+                width: 100%;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .secao-entrada {
+                grid-template-columns: 1fr;
+            }
+
+            .btn-adicionar {
+                width: 100%;
+            }
+
+            .modal-conteudo {
+                width: 95%;
+            }
+
+            .btn-acao {
+                min-width: 80px;
+                font-size: 11px;
+            }
+
+            .item-detalhes {
+                gap: 8px;
+            }
+
+            .botoes-relatorio {
+                flex-direction: column;
+            }
+
+            .btn-exportar {
+                min-width: auto;
+            }
+
+            .campos-duplos {
+                grid-template-columns: 1fr;
+            }
+
+            .orcamento-valores {
+                grid-template-columns: 1fr;
+            }
+
+            .secao-mercado-ativo {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .btn-trocar-mercado {
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>
+                <i class="fas fa-shopping-cart"></i>
+                Meu Supermercado
+            </h1>
+            <div class="status-container">
+                <div class="status-conexao online" id="statusConexao">
+                    <i class="fas fa-circle"></i> Online
+                </div>
+            </div>
+            <button class="btn-editar-usuario" id="btnEditarUsuario" title="Editar Perfil">
+                <i class="fas fa-edit"></i> Perfil
+            </button>
+        </header>
+
+        <div class="conteudo">
+            <!-- INFORMAÇÕES DO USUÁRIO -->
+            <div class="info-usuario" id="infoUsuario">
+                <div class="info-usuario-nome" id="usuarioNomeDisplay">Carregando...</div>
+                <div class="info-usuario-email" id="usuarioEmailDisplay">--</div>
+            </div>
+
+            <!-- MERCADO ATIVO -->
+            <div class="secao-mercado-ativo" id="secaoMercadoAtivo" style="display: none;">
+                <div class="mercado-info">
+                    <div class="mercado-titulo">🏪 Comprando em:</div>
+                    <div class="mercado-nome" id="mercadoAtivoNome"></div>
+                </div>
+                <button class="btn-trocar-mercado" id="btnTrocarMercado">
+                    <i class="fas fa-exchange-alt"></i> Trocar
+                </button>
+            </div>
+
+            <!-- SEÇÃO DE ORÇAMENTO -->
+            <div class="secao-orcamento">
+                <div class="orcamento-header">
+                    <div class="orcamento-titulo">💰 ORÇAMENTO</div>
+                    <button class="btn-editar-orcamento" id="btnEditarOrcamento">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                </div>
+
+                <div class="orcamento-valores">
+                    <div class="orcamento-item">
+                        <div class="orcamento-valor" id="valorOrcamento">R$ 0,00</div>
+                        <div class="orcamento-label">Orçamento Total</div>
+                    </div>
+                    <div class="orcamento-item">
+                        <div class="orcamento-valor" id="valorRestante">R$ 0,00</div>
+                        <div class="orcamento-label">Restante</div>
+                    </div>
+                </div>
+
+                <div class="barra-progresso">
+                    <div class="barra-progresso-preenchida" id="barraProgresso" style="width: 0%"></div>
+                </div>
+
+                <div style="text-align: center; font-size: 12px; margin-top: 10px; opacity: 0.9;">
+                    Gasto: <strong id="valorGasto">R$ 0,00</strong>
+                </div>
+            </div>
+
+            <!-- AVISO DE ORÇAMENTO -->
+            <div class="aviso-orcamento" id="avisoOrcamento"></div>
+
+            <!-- ESTATÍSTICAS -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-valor" id="totalItens">0</div>
+                    <div class="stat-label">Total de Itens</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-valor" id="totalComprado">0</div>
+                    <div class="stat-label">Comprados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-valor" id="totalPreco">R$ 0,00</div>
+                    <div class="stat-label">Valor Total</div>
+                </div>
+            </div>
+
+            <!-- ENTRADA DE DADOS -->
+            <div class="secao-entrada">
+                <div class="input-group">
+                    <input 
+                        type="text" 
+                        id="inputProduto" 
+                        placeholder="Digite o produto..."
+                        autocomplete="off"
+                    >
+                    <button class="btn-sugestoes" id="btnSugestoes" title="Ver sugestões">
+                        <i class="fas fa-lightbulb"></i>
+                    </button>
+                    <ul class="dropdown-sugestoes" id="dropdownSugestoes"></ul>
+                </div>
+                <button class="btn-adicionar" id="btnAdicionar">
+                    <i class="fas fa-plus"></i> Adicionar
+                </button>
+            </div>
+
+            <div class="secao-campos-unidade">
+                <input 
+                    type="number" 
+                    id="inputQuantidade" 
+                    placeholder="Quantidade" 
+                    value="1"
+                    min="0.1"
+                    step="0.1"
+                >
+                <select id="inputUnidade">
+                    <option value="unidade">🔢 Unidade(s)</option>
+                    <option value="kg">⚖️ Quilograma(s)</option>
+                    <option value="g">⚖️ Grama(s)</option>
+                    <option value="l">🥤 Litro(s)</option>
+                    <option value="ml">🥤 Mililitro(s)</option>
+                    <option value="dz">📦 Dúzia(s)</option>
+                    <option value="pct">📦 Pacote(s)</option>
+                    <option value="caixa">📦 Caixa(s)</option>
+                </select>
+            </div>
+
+            <div class="secao-campos">
+                <input 
+                    type="number" 
+                    id="inputPreco" 
+                    placeholder="Preço (R$)" 
+                    step="0.01"
+                    min="0"
+                >
+                <select id="inputCategoria">
+                    <option value="">🏷️ Categoria</option>
+                    <option value="Frutas e Verduras">🥬 Frutas e Verduras</option>
+                    <option value="Alimentos Secos">🌾 Alimentos Secos</option>
+                    <option value="Laticínios">🥛 Laticínios</option>
+                    <option value="Carnes">🥩 Carnes</option>
+                    <option value="Bebidas">🥤 Bebidas</option>
+                    <option value="Congelados">❄️ Congelados</option>
+                    <option value="Higiene">🧼 Higiene</option>
+                    <option value="Limpeza">🧹 Limpeza</option>
+                    <option value="Outros">📦 Outros</option>
+                </select>
+            </div>
+
+            <div class="secao-campos">
+                <select id="inputAtribuidor">
+                    <option value="">👤 Quem vai comprar?</option>
+                </select>
+                <div style="display: flex; gap: 10px;">
+                    <input 
+                        type="text" 
+                        id="mercadoAtualDisplay" 
+                        placeholder="Nenhum mercado escolhido" 
+                        disabled
+                        style="background: #f0f0f0; cursor: not-allowed; flex: 1;"
+                    >
+                    <button id="btnEscolherMercado" style="background: #FF9800; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                        <i class="fas fa-store"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ABAS -->
+            <div class="abas">
+                <button class="aba ativa" data-aba="pendentes">
+                    <i class="fas fa-list"></i> Pendentes
+                </button>
+                <button class="aba" data-aba="comprados">
+                    <i class="fas fa-check-circle"></i> Comprados
+                </button>
+                <button class="aba" data-aba="todos">
+                    <i class="fas fa-boxes"></i> Todos
+                </button>
+            </div>
+
+            <!-- LISTA DE COMPRAS -->
+            <ul class="lista-items" id="listaCompras"></ul>
+
+            <div class="lista-vazia" id="listaVazia" style="display: none;">
+                <i class="fas fa-inbox"></i>
+                <p>Nenhum item nesta visualização</p>
+            </div>
+        </div>
+
+        <!-- BARRA DE AÇÕES -->
+        <div class="barra-inferior">
+            <button class="btn-acao btn-compartilhar" id="btnCompartilhar">
+                <i class="fas fa-share-alt"></i> Compartilhar
+            </button>
+            <button class="btn-acao btn-relatorio" id="btnRelatorio">
+                <i class="fas fa-chart-bar"></i> Relatório
+            </button>
+            <button class="btn-acao btn-limpar" id="btnLimparComprados">
+                <i class="fas fa-trash"></i> Limpar
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL DE ESCOLHER MERCADO -->
+    <div class="modal" id="modalEscolherMercado">
+        <div class="modal-conteudo">
+            <div class="modal-header">
+                <i class="fas fa-store"></i> Escolher Mercado
+            </div>
+
+            <div class="modal-escolher-mercado">
+                <div class="opcao-mercado" data-mercado="Extra">
+                    🏬 Extra
+                </div>
+                <div class="opcao-mercado" data-mercado="Carrefour">
+                    🏬 Carrefour
+                </div>
+                <div class="opcao-mercado" data-mercado="Pão de Açúcar">
+                    🏬 Pão de Açúcar
+                </div>
+                <div class="opcao-mercado" data-mercado="Dia">
+                    🏬 Dia
+                </div>
+                <div class="opcao-mercado" data-mercado="Supermercado Local">
+                    🏬 Supermercado Local
+                </div>
+                <div class="opcao-mercado" data-mercado="Outro">
+                    🏬 Outro
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 20px; border-top: 2px solid var(--cor-borda); padding-top: 15px;">
+                <label>Ou digite um nome personalizado:</label>
+                <input type="text" id="inputMercadoCustomizado" placeholder="Digite o nome do mercado">
+            </div>
+
+            <div class="modal-acoes">
+                <button class="btn-primario" id="btnConfirmarMercado">
+                    <i class="fas fa-check"></i> Confirmar
+                </button>
+                <button class="btn-secundario" id="btnCancelarMercado">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE EDIÇÃO DE ORÇAMENTO -->
+    <div class="modal" id="modalEditarOrcamento">
+        <div class="modal-conteudo">
+            <div class="modal-header">
+                <i class="fas fa-money-bill-wave"></i> Editar Orçamento
+            </div>
+
+            <div class="form-group">
+                <label>💰 Valor do Orçamento (R$):</label>
+                <input type="number" id="editOrcamento" placeholder="Digite o valor" step="0.01" min="0">
+            </div>
+
+            <div class="form-group" style="background: #f5f5f5; padding: 15px; border-radius: 8px;">
+                <div style="margin-bottom: 10px;">
+                    <strong style="color: #333;">Resumo Financeiro:</strong>
+                </div>
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">
+                    Orçamento Atual: <strong id="displayOrcamentoAtual">R$ 0,00</strong>
+                </div>
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">
+                    Gasto Atual: <strong id="displayGastoAtual">R$ 0,00</strong>
+                </div>
+                <div style="font-size: 14px; color: #666;">
+                    Disponível: <strong id="displayDisponivel">R$ 0,00</strong>
+                </div>
+            </div>
+
+            <div class="modal-acoes">
+                <button class="btn-primario" id="btnSalvarOrcamento">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+                <button class="btn-secundario" id="btnCancelarOrcamento">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE EDIÇÃO DE USUÁRIO -->
+    <div class="modal" id="modalEditarUsuario">
+        <div class="modal-conteudo">
+            <div class="modal-header">
+                <i class="fas fa-user-edit"></i> Editar Perfil
+            </div>
+
+            <div class="form-group">
+                <label>👤 Nome Completo:</label>
+                <input type="text" id="editNomeUsuario" placeholder="Digite seu nome">
+            </div>
+
+            <div class="form-group">
+                <label>📧 Email (opcional):</label>
+                <input type="email" id="editEmailUsuario" placeholder="seu@email.com">
+            </div>
+
+            <div class="form-group">
+                <label>🏠 Endereço (opcional):</label>
+                <input type="text" id="editEnderecoUsuario" placeholder="Rua, número">
+            </div>
+
+            <div class="form-group">
+                <label>📞 Telefone (opcional):</label>
+                <input type="tel" id="editTelefoneUsuario" placeholder="(11) 99999-9999">
+            </div>
+
+            <div class="form-group" style="background: #f5f5f5; padding: 10px; border-radius: 8px; color: #666; font-size: 12px;">
+                <strong>ID da Lista:</strong> <span id="displayIdLista"></span>
+                <br>
+                <strong>Data de Cadastro:</strong> <span id="displayDataCadastro"></span>
+            </div>
+
+            <div class="modal-acoes">
+                <button class="btn-primario" id="btnSalvarUsuario">
+                    <i class="fas fa-save"></i> Salvar Alterações
+                </button>
+                <button class="btn-secundario" id="btnCancelarUsuario">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE COMPARTILHAMENTO -->
+    <div class="modal" id="modalCompartilhamento">
+        <div class="modal-conteudo">
+            <div class="modal-header">
+                <i class="fas fa-share-alt"></i> Compartilhar Lista
+            </div>
+
+            <div class="abas-modal">
+                <button class="aba-modal ativa" data-aba-modal="compartilhar">
+                    Compartilhar
+                </button>
+                <button class="aba-modal" data-aba-modal="conectar">
+                    Conectar
+                </button>
+                <button class="aba-modal" data-aba-modal="usuarios">
+                    Usuários
+                </button>
+            </div>
+
+            <!-- ABA COMPARTILHAR -->
+            <div id="abaCompartilhar" class="conteudo-aba-modal ativo">
+                <div class="form-group">
+                    <label><i class="fas fa-key"></i> Seu Código de Compartilhamento:</label>
+                    <div class="campo-compartilhamento">
+                        <input 
+                            type="text" 
+                            id="codigoCompartilhamento" 
+                            readonly
+                            placeholder="Gerando código..."
+                        >
+                        <button class="btn-copiar" id="btnCopiarCodigo">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                <p style="font-size: 12px; color: #666;">
+                    📱 Compartilhe este código com outras pessoas para que elas possam acessar sua lista em tempo real.
+                </p>
+            </div>
+
+            <!-- ABA CONECTAR -->
+            <div id="abaConectar" class="conteudo-aba-modal">
+                <div class="form-group">
+                    <label><i class="fas fa-link"></i> Conectar a uma Lista Existente:</label>
+                    <input 
+                        type="text" 
+                        id="codigoConexao" 
+                        placeholder="Cole o código aqui"
+                    >
+                    <button class="btn-primario" id="btnConectar" style="width: 100%; margin-top: 10px;">
+                        <i class="fas fa-check"></i> Conectar
+                    </button>
+                </div>
+                <div id="sincronizacaoInfo" class="sinc-info" style="display: none;">
+                    <i class="fas fa-sync-alt"></i> Sincronizando...
+                </div>
+            </div>
+
+            <!-- ABA USUÁRIOS -->
+            <div id="abaUsuarios" class="conteudo-aba-modal">
+                <div class="form-group">
+                    <label><i class="fas fa-users"></i> Usuários Conectados:</label>
+                    <div id="usuariosConectados" class="usuarios-online">
+                        <p style="color: #999; margin: 0;">Carregando...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-acoes">
+                <button class="btn-secundario" id="btnFecharModal">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE EDIÇÃO DE ITEM -->
+    <div class="modal" id="modalEdicao">
+        <div class="modal-conteudo">
+            <div class="modal-header">
+                <i class="fas fa-edit"></i> Editar Item
+            </div>
+            
+            <div class="form-group">
+                <label>📦 Produto:</label>
+                <input type="text" id="editProduto" placeholder="Nome do produto">
+            </div>
+
+            <div class="campos-duplos">
+                <div class="form-group">
+                    <label>Quantidade:</label>
+                    <input type="number" id="editQuantidade" min="0.1" step="0.1" value="1">
+                </div>
+                <div class="form-group">
+                    <label>Unidade:</label>
+                    <select id="editUnidade">
+                        <option value="unidade">Unidade(s)</option>
+                        <option value="kg">Quilograma(s)</option>
+                        <option value="g">Grama(s)</option>
+                        <option value="l">Litro(s)</option>
+                        <option value="ml">Mililitro(s)</option>
+                        <option value="dz">Dúzia(s)</option>
+                        <option value="pct">Pacote(s)</option>
+                        <option value="caixa">Caixa(s)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>💰 Preço (R$):</label>
+                <input type="number" id="editPreco" step="0.01" min="0">
+            </div>
+
+            <div class="form-group">
+                <label>🏷️ Categoria:</label>
+                <select id="editCategoria">
+                    <option value="">Sem categoria</option>
+                    <option value="Frutas e Verduras">🥬 Frutas e Verduras</option>
+                    <option value="Alimentos Secos">🌾 Alimentos Secos</option>
+                    <option value="Laticínios">🥛 Laticínios</option>
+                    <option value="Carnes">🥩 Carnes</option>
+                    <option value="Bebidas">🥤 Bebidas</option>
+                    <option value="Congelados">❄️ Congelados</option>
+                    <option value="Higiene">🧼 Higiene</option>
+                    <option value="Limpeza">🧹 Limpeza</option>
+                    <option value="Outros">📦 Outros</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>🏪 Mercado:</label>
+                <select id="editMercado">
+                    <option value="">Selecione o mercado</option>
+                    <option value="Extra">Extra</option>
+                    <option value="Carrefour">Carrefour</option>
+                    <option value="Pão de Açúcar">Pão de Açúcar</option>
+                    <option value="Dia">Dia</option>
+                    <option value="Supermercado Local">Supermercado Local</option>
+                    <option value="Outro">Outro</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>👤 Quem vai comprar?</label>
+                <select id="editAtribuidor">
+                    <option value="">Não atribuído</option>
+                </select>
+            </div>
+
+            <div class="modal-acoes">
+                <button class="btn-primario" id="btnSalvarEdicao">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+                <button class="btn-secundario" id="btnCancelarEdicao">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE RELATÓRIO -->
+    <div class="modal" id="modalRelatorio">
+        <div class="modal-conteudo">
+            <div class="modal-header">
+                <i class="fas fa-chart-bar"></i> Relatório e Gráficos
+            </div>
+
+            <!-- GRÁFICOS -->
+            <div class="chart-wrapper">
+                <div class="relatorio-titulo">Gastos por Categoria</div>
+                <div class="grafico-container">
+                    <canvas id="graficoCategoria"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-wrapper">
+                <div class="relatorio-titulo">Gastos por Mercado</div>
+                <div class="grafico-container">
+                    <canvas id="graficoMercado"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-wrapper">
+                <div class="relatorio-titulo">Status da Compra</div>
+                <div class="grafico-container">
+                    <canvas id="graficoStatus"></canvas>
+                </div>
+            </div>
+
+            <!-- RESUMO -->
+            <div class="relatorio-container">
+                <div class="relatorio-titulo">Resumo da Lista</div>
+                <div id="relatorioContent"></div>
+                <div class="relatorio-info">
+                    📊 Relatório gerado em <strong id="dataRelatorio"></strong>
+                </div>
+            </div>
+
+            <!-- BOTÕES DE EXPORTAÇÃO -->
+            <div class="botoes-relatorio">
+                <button class="btn-exportar btn-pdf" id="btnExportarPDF">
+                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                </button>
+                <button class="btn-exportar btn-txt" id="btnExportarTXT">
+                    <i class="fas fa-file-alt"></i> Exportar TXT
+                </button>
+            </div>
+
+            <div class="modal-acoes">
+                <button class="btn-secundario" id="btnFecharRelatorio">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // GERENCIADOR DE BANCO DE DADOS (IndexedDB)
+        // ============================================
+
+        class GerenciadorDB {
+            constructor() {
+                this.dbName = 'SupermercadoApp';
+                this.storeName = 'compras';
+                this.usuariosStoreName = 'usuarios';
+                this.usuarioPerfilStoreName = 'usuarioPerfil';
+                this.orcamentoStoreName = 'orcamento';
+                this.mercadoStoreName = 'mercado';
+                this.db = null;
+            }
+
+            async inicializar() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, 4);
+
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        resolve();
+                    };
+
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            db.createObjectStore(this.storeName, { keyPath: 'id' });
+                        }
+                        if (!db.objectStoreNames.contains(this.usuariosStoreName)) {
+                            db.createObjectStore(this.usuariosStoreName, { keyPath: 'id' });
+                        }
+                        if (!db.objectStoreNames.contains(this.usuarioPerfilStoreName)) {
+                            db.createObjectStore(this.usuarioPerfilStoreName, { keyPath: 'id' });
+                        }
+                        if (!db.objectStoreNames.contains(this.orcamentoStoreName)) {
+                            db.createObjectStore(this.orcamentoStoreName, { keyPath: 'id' });
+                        }
+                        if (!db.objectStoreNames.contains(this.mercadoStoreName)) {
+                            db.createObjectStore(this.mercadoStoreName, { keyPath: 'id' });
+                        }
+                    };
+                });
+            }
+
+            async salvarItens(idLista, items) {
+                const transaction = this.db.transaction([this.storeName], 'readwrite');
+                const store = transaction.objectStore(this.storeName);
+                const chave = `itens_${idLista}`;
+                
+                await store.put({
+                    id: chave,
+                    items: items,
+                    dataAtualizacao: new Date().toISOString()
+                });
+
+                return new Promise((resolve, reject) => {
+                    transaction.oncomplete = () => resolve();
+                    transaction.onerror = () => reject(transaction.error);
+                });
+            }
+
+            async obterItens(idLista) {
+                const transaction = this.db.transaction([this.storeName], 'readonly');
+                const store = transaction.objectStore(this.storeName);
+                const chave = `itens_${idLista}`;
+
+                return new Promise((resolve, reject) => {
+                    const request = store.get(chave);
+                    request.onsuccess = () => {
+                        const resultado = request.result;
+                        resolve(resultado ? resultado.items : []);
+                    };
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async salvarMercado(idLista, mercado) {
+                const transaction = this.db.transaction([this.mercadoStoreName], 'readwrite');
+                const store = transaction.objectStore(this.mercadoStoreName);
+                const chave = `mercado_${idLista}`;
+
+                await store.put({
+                    id: chave,
+                    valor: mercado,
+                    dataAtualizacao: new Date().toISOString()
+                });
+
+                return new Promise((resolve, reject) => {
+                    transaction.oncomplete = () => resolve();
+                    transaction.onerror = () => reject(transaction.error);
+                });
+            }
+
+            async obterMercado(idLista) {
+                const transaction = this.db.transaction([this.mercadoStoreName], 'readonly');
+                const store = transaction.objectStore(this.mercadoStoreName);
+                const chave = `mercado_${idLista}`;
+
+                return new Promise((resolve, reject) => {
+                    const request = store.get(chave);
+                    request.onsuccess = () => {
+                        const resultado = request.result;
+                        resolve(resultado ? resultado.valor : '');
+                    };
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async salvarOrcamento(idLista, orcamento) {
+                const transaction = this.db.transaction([this.orcamentoStoreName], 'readwrite');
+                const store = transaction.objectStore(this.orcamentoStoreName);
+                const chave = `orcamento_${idLista}`;
+
+                await store.put({
+                    id: chave,
+                    valor: orcamento,
+                    dataAtualizacao: new Date().toISOString()
+                });
+
+                return new Promise((resolve, reject) => {
+                    transaction.oncomplete = () => resolve();
+                    transaction.onerror = () => reject(transaction.error);
+                });
+            }
+
+            async obterOrcamento(idLista) {
+                const transaction = this.db.transaction([this.orcamentoStoreName], 'readonly');
+                const store = transaction.objectStore(this.orcamentoStoreName);
+                const chave = `orcamento_${idLista}`;
+
+                return new Promise((resolve, reject) => {
+                    const request = store.get(chave);
+                    request.onsuccess = () => {
+                        const resultado = request.result;
+                        resolve(resultado ? resultado.valor : 0);
+                    };
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async salvarUsuarios(idLista, usuarios) {
+                const transaction = this.db.transaction([this.usuariosStoreName], 'readwrite');
+                const store = transaction.objectStore(this.usuariosStoreName);
+                const chave = `usuarios_${idLista}`;
+
+                await store.put({
+                    id: chave,
+                    usuarios: usuarios,
+                    dataAtualizacao: new Date().toISOString()
+                });
+
+                return new Promise((resolve, reject) => {
+                    transaction.oncomplete = () => resolve();
+                    transaction.onerror = () => reject(transaction.error);
+                });
+            }
+
+            async obterUsuarios(idLista) {
+                const transaction = this.db.transaction([this.usuariosStoreName], 'readonly');
+                const store = transaction.objectStore(this.usuariosStoreName);
+                const chave = `usuarios_${idLista}`;
+
+                return new Promise((resolve, reject) => {
+                    const request = store.get(chave);
+                    request.onsuccess = () => {
+                        const resultado = request.result;
+                        resolve(resultado ? resultado.usuarios : []);
+                    };
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async salvarPerfilUsuario(idLista, perfil) {
+                const transaction = this.db.transaction([this.usuarioPerfilStoreName], 'readwrite');
+                const store = transaction.objectStore(this.usuarioPerfilStoreName);
+                const chave = `perfil_${idLista}`;
+
+                await store.put({
+                    id: chave,
+                    ...perfil,
+                    dataAtualizacao: new Date().toISOString()
+                });
+
+                return new Promise((resolve, reject) => {
+                    transaction.oncomplete = () => resolve();
+                    transaction.onerror = () => reject(transaction.error);
+                });
+            }
+
+            async obterPerfilUsuario(idLista) {
+                const transaction = this.db.transaction([this.usuarioPerfilStoreName], 'readonly');
+                const store = transaction.objectStore(this.usuarioPerfilStoreName);
+                const chave = `perfil_${idLista}`;
+
+                return new Promise((resolve, reject) => {
+                    const request = store.get(chave);
+                    request.onsuccess = () => {
+                        const resultado = request.result;
+                        resolve(resultado || null);
+                    };
+                    request.onerror = () => reject(request.error);
+                });
+            }
+        }
+
+        // ============================================
+        // GERADOR DE RELATÓRIOS E GRÁFICOS
+        // ============================================
+
+        class GeradorRelatorios {
+            constructor(items) {
+                this.items = items;
+                this.graficos = {};
+            }
+
+            calcularEstatisticas() {
+                const stats = {
+                    totalItens: this.items.length,
+                    totalComprados: this.items.filter(i => i.comprado).length,
+                    totalPendentes: this.items.filter(i => !i.comprado).length,
+                    valorTotal: this.items.reduce((sum, i) => sum + (i.preco * i.quantidade), 0),
+                    valorComprado: this.items
+                        .filter(i => i.comprado)
+                        .reduce((sum, i) => sum + (i.preco * i.quantidade), 0),
+                    valorPendente: this.items
+                        .filter(i => !i.comprado)
+                        .reduce((sum, i) => sum + (i.preco * i.quantidade), 0),
+                    categoriasCount: {},
+                    mercadosCount: {},
+                    categoriasValor: {},
+                    mercadosValor: {}
+                };
+
+                // Contar por categoria
+                this.items.forEach(item => {
+                    const cat = item.categoria || 'Sem Categoria';
+                    stats.categoriasCount[cat] = (stats.categoriasCount[cat] || 0) + item.quantidade;
+                    stats.categoriasValor[cat] = (stats.categoriasValor[cat] || 0) + (item.preco * item.quantidade);
+                });
+
+                // Contar por mercado
+                this.items.forEach(item => {
+                    const merc = item.mercado || 'Não especificado';
+                    stats.mercadosCount[merc] = (stats.mercadosCount[merc] || 0) + item.quantidade;
+                    stats.mercadosValor[merc] = (stats.mercadosValor[merc] || 0) + (item.preco * item.quantidade);
+                });
+
+                return stats;
+            }
+
+            gerarGraficoCategoria(canvasId) {
+                const stats = this.calcularEstatisticas();
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                
+                const cores = [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                    '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF9F40'
+                ];
+
+                if (this.graficos.categoria) {
+                    this.graficos.categoria.destroy();
+                }
+
+                this.graficos.categoria = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(stats.categoriasValor),
+                        datasets: [{
+                            data: Object.values(stats.categoriasValor),
+                            backgroundColor: cores.slice(0, Object.keys(stats.categoriasValor).length),
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { font: { size: 11 } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            gerarGraficoMercado(canvasId) {
+                const stats = this.calcularEstatisticas();
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                
+                if (this.graficos.mercado) {
+                    this.graficos.mercado.destroy();
+                }
+
+                this.graficos.mercado = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(stats.mercadosValor),
+                        datasets: [{
+                            label: 'Gasto (R$)',
+                            data: Object.values(stats.mercadosValor),
+                            backgroundColor: '#2196F3',
+                            borderColor: '#1976D2',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: { display: true }
+                        },
+                        scales: {
+                            x: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+
+            gerarGraficoStatus(canvasId) {
+                const stats = this.calcularEstatisticas();
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                
+                if (this.graficos.status) {
+                    this.graficos.status.destroy();
+                }
+
+                this.graficos.status = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Comprados', 'Pendentes'],
+                        datasets: [{
+                            data: [stats.totalComprados, stats.totalPendentes],
+                            backgroundColor: ['#4CAF50', '#FF9800'],
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+
+            gerarResumo() {
+                const stats = this.calcularEstatisticas();
+                
+                let html = `
+                    <div class="relatorio-item">
+                        <strong>Total de Itens:</strong> ${stats.totalItens}
+                    </div>
+                    <div class="relatorio-item">
+                        <strong>Comprados:</strong> ${stats.totalComprados} 
+                        <span style="color: #4CAF50;">(${stats.totalComprados > 0 ? ((stats.totalComprados / stats.totalItens) * 100).toFixed(1) : 0}%)</span>
+                    </div>
+                    <div class="relatorio-item">
+                        <strong>Pendentes:</strong> ${stats.totalPendentes}
+                        <span style="color: #FF9800;">(${stats.totalPendentes > 0 ? ((stats.totalPendentes / stats.totalItens) * 100).toFixed(1) : 0}%)</span>
+                    </div>
+                    <div class="relatorio-item" style="border-top: 2px solid var(--cor-borda); padding-top: 10px; margin-top: 10px;">
+                        <strong>Valor Total:</strong> R$ ${stats.valorTotal.toFixed(2)}
+                    </div>
+                    <div class="relatorio-item">
+                        <strong>Valor Comprado:</strong> R$ ${stats.valorComprado.toFixed(2)}
+                    </div>
+                    <div class="relatorio-item">
+                        <strong>Valor Pendente:</strong> R$ ${stats.valorPendente.toFixed(2)}
+                    </div>
+                    <div class="relatorio-item" style="border-top: 2px solid var(--cor-borda); padding-top: 10px; margin-top: 10px;">
+                        <strong>Ticket Médio:</strong> R$ ${(stats.valorTotal / stats.totalItens).toFixed(2)}
+                    </div>
+                `;
+
+                const maisCaros = this.items
+                    .sort((a, b) => (b.preco * b.quantidade) - (a.preco * a.quantidade))
+                    .slice(0, 3);
+
+                if (maisCaros.length > 0) {
+                    html += `<div class="relatorio-item" style="border-top: 2px solid var(--cor-borda); padding-top: 10px; margin-top: 10px;">
+                        <strong>Top 3 Produtos Mais Caros:</strong>
+                    </div>`;
+                    
+                    maisCaros.forEach((item, idx) => {
+                        html += `<div class="relatorio-item" style="padding-left: 20px;">
+                            ${idx + 1}. ${item.produto} - R$ ${(item.preco * item.quantidade).toFixed(2)}
+                        </div>`;
+                    });
+                }
+
+                return html;
+            }
+
+            obterFormatoUnidade(unidade) {
+                const formatos = {
+                    'unidade': 'unidade(s)',
+                    'kg': 'kg',
+                    'g': 'g',
+                    'l': 'litro(s)',
+                    'ml': 'ml',
+                    'dz': 'dúzia(s)',
+                    'pct': 'pacote(s)',
+                    'caixa': 'caixa(s)'
+                };
+                return formatos[unidade] || unidade;
+            }
+
+            exportarPDF() {
+                const stats = this.calcularEstatisticas();
+                const elemento = document.createElement('div');
+                
+                const dataAtual = new Date().toLocaleDateString('pt-BR');
+                const horaAtual = new Date().toLocaleTimeString('pt-BR');
+
+                elemento.innerHTML = `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                        <h1 style="text-align: center; color: #4CAF50; border-bottom: 3px solid #4CAF50; padding-bottom: 10px;">
+                            RELATÓRIO DE COMPRAS - MEU SUPERMERCADO
+                        </h1>
+                        
+                        <p style="text-align: right; color: #666; margin-bottom: 20px;">
+                            <strong>Data:</strong> ${dataAtual} às ${horaAtual}
+                        </p>
+
+                        <h2 style="color: #2196F3; margin-top: 20px;">📊 RESUMO GERAL</h2>
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                            <tr style="background: #f5f5f5;">
+                                <td style="padding: 10px; border: 1px solid #ddd;"><strong>Total de Itens</strong></td>
+                                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;"><strong>${stats.totalItens}</strong></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #ddd;">Comprados</td>
+                                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${stats.totalComprados} (${stats.totalItens > 0 ? ((stats.totalComprados / stats.totalItens) * 100).toFixed(1) : 0}%)</td>
+                            </tr>
+                            <tr style="background: #f5f5f5;">
+                                <td style="padding: 10px; border: 1px solid #ddd;">Pendentes</td>
+                                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${stats.totalPendentes} (${stats.totalItens > 0 ? ((stats.totalPendentes / stats.totalItens) * 100).toFixed(1) : 0}%)</td>
+                            </tr>
+                        </table>
+
+                        <h2 style="color: #2196F3; margin-top: 20px;">💰 ANÁLISE FINANCEIRA</h2>
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                            <tr style="background: #f5f5f5;">
+                                <td style="padding: 10px; border: 1px solid #ddd;"><strong>Valor Total</strong></td>
+                                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;"><strong>R$ ${stats.valorTotal.toFixed(2)}</strong></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #ddd;">Valor Comprado</td>
+                                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">R$ ${stats.valorComprado.toFixed(2)}</td>
+                            </tr>
+                            <tr style="background: #f5f5f5;">
+                                <td style="padding: 10px; border: 1px solid #ddd;">Valor Pendente</td>
+                                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">R$ ${stats.valorPendente.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #ddd;">Ticket Médio</td>
+                                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">R$ ${(stats.valorTotal / (stats.totalItens || 1)).toFixed(2)}</td>
+                            </tr>
+                        </table>
+
+                        <h2 style="color: #2196F3; margin-top: 20px;">🏷️ GASTOS POR CATEGORIA</h2>
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                            <tr style="background: #f5f5f5;">
+                                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Categoria</th>
+                                <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Quantidade</th>
+                                <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Valor (R$)</th>
+                            </tr>
+                            ${Object.keys(stats.categoriasValor).map((cat, idx) => `
+                                <tr ${idx % 2 === 0 ? 'style="background: #f5f5f5;"' : ''}>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${cat}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${stats.categoriasCount[cat]}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">R$ ${stats.categoriasValor[cat].toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </table>
+
+                        <h2 style="color: #2196F3; margin-top: 20px;">🏪 GASTOS POR MERCADO</h2>
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                            <tr style="background: #f5f5f5;">
+                                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Mercado</th>
+                                <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Quantidade</th>
+                                <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Valor (R$)</th>
+                            </tr>
+                            ${Object.keys(stats.mercadosValor).map((merc, idx) => `
+                                <tr ${idx % 2 === 0 ? 'style="background: #f5f5f5;"' : ''}>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${merc}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">${stats.mercadosCount[merc]}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">R$ ${stats.mercadosValor[merc].toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </table>
+
+                        <h2 style="color: #2196F3; margin-top: 20px;">📝 LISTA DETALHADA</h2>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr style="background: #f5f5f5;">
+                                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Produto</th>
+                                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Qtd</th>
+                                <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Preço</th>
+                                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Status</th>
+                            </tr>
+                            ${this.items.map((item, idx) => `
+                                <tr ${idx % 2 === 0 ? 'style="background: #f5f5f5;"' : ''}>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${item.produto}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${item.quantidade} ${this.obterFormatoUnidade(item.unidade)}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">R$ ${(item.preco * item.quantidade).toFixed(2)}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: ${item.comprado ? '#4CAF50' : '#FF9800'};">
+                                        ${item.comprado ? '✓ Comprado' : '⏳ Pendente'}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </table>
+
+                        <p style="margin-top: 30px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #ddd; padding-top: 20px;">
+                            Relatório gerado automaticamente pelo Meu Supermercado<br>
+                            ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}
+                        </p>
+                    </div>
+                `;
+
+                const opt = {
+                    margin: 10,
+                    filename: `relatorio_compras_${new Date().getTime()}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+                };
+
+                html2pdf().set(opt).from(elemento).save();
+            }
+
+            exportarTXT() {
+                const stats = this.calcularEstatisticas();
+                const dataAtual = new Date().toLocaleDateString('pt-BR');
+                const horaAtual = new Date().toLocaleTimeString('pt-BR');
+
+                let conteudo = `
+╔════════════════════════════════════════════════════════════════════════════╗
+║                     RELATÓRIO DE COMPRAS - MEU SUPERMERCADO                 ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+Data do Relatório: ${dataAtual} às ${horaAtual}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 RESUMO GERAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Total de Itens:        ${stats.totalItens}
+Comprados:             ${stats.totalComprados} (${stats.totalItens > 0 ? ((stats.totalComprados / stats.totalItens) * 100).toFixed(1) : 0}%)
+Pendentes:             ${stats.totalPendentes} (${stats.totalItens > 0 ? ((stats.totalPendentes / stats.totalItens) * 100).toFixed(1) : 0}%)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💰 ANÁLISE FINANCEIRA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Valor Total:           R$ ${stats.valorTotal.toFixed(2)}
+Valor Comprado:        R$ ${stats.valorComprado.toFixed(2)}
+Valor Pendente:        R$ ${stats.valorPendente.toFixed(2)}
+Ticket Médio:          R$ ${(stats.valorTotal / (stats.totalItens || 1)).toFixed(2)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏷️  GASTOS POR CATEGORIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+
+                Object.keys(stats.categoriasValor).forEach(cat => {
+                    conteudo += `${cat.padEnd(30)} | Qtd: ${String(stats.categoriasCount[cat]).padStart(3)} | R$ ${String(stats.categoriasValor[cat].toFixed(2)).padStart(10)}\n`;
+                });
+
+                conteudo += `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏪 GASTOS POR MERCADO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+
+                Object.keys(stats.mercadosValor).forEach(merc => {
+                    conteudo += `${merc.padEnd(30)} | Qtd: ${String(stats.mercadosCount[merc]).padStart(3)} | R$ ${String(stats.mercadosValor[merc].toFixed(2)).padStart(10)}\n`;
+                });
+
+                conteudo += `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 LISTA DETALHADA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${String('Produto').padEnd(25)} | Qtd | Unid | Preço Unit. | Total      | Status
+`;
+
+                this.items.forEach(item => {
+                    const total = (item.preco * item.quantidade).toFixed(2);
+                    const status = item.comprado ? '✓ Comprado' : '⏳ Pendente';
+                    const unidade = this.obterFormatoUnidade(item.unidade).substring(0, 5);
+                    conteudo += `${item.produto.substring(0, 25).padEnd(25)} | ${String(item.quantidade.toFixed(1)).padStart(3)} | ${unidade.padStart(4)} | R$ ${String(item.preco.toFixed(2)).padStart(8)} | R$ ${String(total).padStart(8)} | ${status}\n`;
+                });
+
+                conteudo += `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Relatório gerado automaticamente pelo Meu Supermercado
+${dataAtual} às ${horaAtual}
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                          FIM DO RELATÓRIO                                  ║
+╚════════════════════════════════════════════════════════════════════════════╝
+`;
+
+                const elemento = document.createElement('a');
+                elemento.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(conteudo));
+                elemento.setAttribute('download', `relatorio_compras_${new Date().getTime()}.txt`);
+                elemento.style.display = 'none';
+                document.body.appendChild(elemento);
+                elemento.click();
+                document.body.removeChild(elemento);
+            }
+        }
+
+        // ============================================
+        // APLICAÇÃO PRINCIPAL
+        // ============================================
+
+        class AppCompras {
+            constructor() {
+                this.items = [];
+                this.abaAtiva = 'pendentes';
+                this.itemEmEdicao = null;
+                this.idLista = this.obterOuCriarIdLista();
+                this.nomeUsuario = this.obterOuCriarNomeUsuario();
+                this.perfil = {};
+                this.orcamento = 0;
+                this.mercadoSelecionado = '';
+                this.db = new GerenciadorDB();
+                this.gerador = null;
+
+                this.sugestoes = [
+                    'Pão', 'Leite', 'Ovos', 'Queijo', 'Arroz', 'Feijão',
+                    'Macarrão', 'Açúcar', 'Sal', 'Óleo', 'Manteiga',
+                    'Alface', 'Tomate', 'Cebola', 'Batata', 'Cenoura',
+                    'Maçã', 'Banana', 'Laranja', 'Frango', 'Carne Vermelha',
+                    'Peixe', 'Iogurte', 'Café', 'Chá', 'Refrigerante',
+                    'Suco', 'Cerveja', 'Vinho', 'Chocolate', 'Biscoito',
+                    'Shampoo', 'Sabonete', 'Papel Higiênico', 'Detergente',
+                    'Amaciante', 'Desinfetante', 'Bife', 'Costela', 'Alcatra',
+                    'Melancia', 'Melão', 'Abacaxi', 'Morango', 'Uva'
+                ];
+
+                this.inicializar();
+            }
+
+            obterOuCriarIdLista() {
+                let id = localStorage.getItem('idLista');
+                if (!id) {
+                    id = 'lista_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+                    localStorage.setItem('idLista', id);
+                }
+                return id;
+            }
+
+            obterOuCriarNomeUsuario() {
+                let nome = localStorage.getItem('nomeUsuario');
+                if (!nome) {
+                    const nomes = ['Alice', 'Bruno', 'Carlos', 'Diana', 'Eduardo', 'Fernanda', 'Gabriel', 'Helena'];
+                    const sobrenomes = ['Silva', 'Santos', 'Oliveira', 'Costa', 'Ferreira', 'Gomes', 'Martins', 'Rocha'];
+                    
+                    const nomeSelecionado = nomes[Math.floor(Math.random() * nomes.length)];
+                    const sobrenomeSelecionado = sobrenomes[Math.floor(Math.random() * sobrenomes.length)];
+                    nome = `${nomeSelecionado} ${sobrenomeSelecionado}`;
+                    
+                    localStorage.setItem('nomeUsuario', nome);
+                }
+                return nome;
+            }
+
+            async inicializar() {
+                try {
+                    await this.db.inicializar();
+                    await this.carregarDados();
+                    await this.carregarOrcamento();
+                    await this.carregarMercado();
+                    await this.carregarPerfilUsuario();
+                    this.gerador = new GeradorRelatorios(this.items);
+                    this.configurarEventos();
+                    this.atualizarUI();
+                    this.iniciarSincronizacao();
+                    this.atualizarUsuarioInfo();
+                    this.atualizarMercadoAtivo();
+                    this.verificarConexao();
+                    this.preencherSelectAtribuidores();
+                    
+                    console.log(`✅ App iniciado`);
+                    console.log(`📋 Lista ID: ${this.idLista}`);
+                    console.log(`👤 Usuário: ${this.nomeUsuario}`);
+                    console.log(`💰 Orçamento: R$ ${this.orcamento.toFixed(2)}`);
+                    console.log(`🏪 Mercado: ${this.mercadoSelecionado || 'Nenhum'}`);
+                    
+                    this.mostrarToast(`Bem-vindo, ${this.nomeUsuario}!`, 'sucesso');
+                } catch (erro) {
+                    console.error('Erro ao inicializar:', erro);
+                    this.mostrarToast('Erro ao inicializar o app', 'erro');
+                }
+            }
+
+            async carregarOrcamento() {
+                try {
+                    this.orcamento = await this.db.obterOrcamento(this.idLista);
+                    if (!this.orcamento) {
+                        this.orcamento = 0;
+                    }
+                } catch (erro) {
+                    console.error('Erro ao carregar orçamento:', erro);
+                    this.orcamento = 0;
+                }
+            }
+
+            async carregarMercado() {
+                try {
+                    this.mercadoSelecionado = await this.db.obterMercado(this.idLista);
+                    if (!this.mercadoSelecionado) {
+                        this.mercadoSelecionado = '';
+                    }
+                } catch (erro) {
+                    console.error('Erro ao carregar mercado:', erro);
+                    this.mercadoSelecionado = '';
+                }
+            }
+
+            async carregarPerfilUsuario() {
+                try {
+                    const perfil = await this.db.obterPerfilUsuario(this.idLista);
+                    if (perfil) {
+                        this.perfil = perfil;
+                    } else {
+                        this.perfil = {
+                            nome: this.nomeUsuario,
+                            email: '',
+                            endereco: '',
+                            telefone: '',
+                            dataCadastro: new Date().toISOString()
+                        };
+                        await this.db.salvarPerfilUsuario(this.idLista, this.perfil);
+                    }
+                } catch (erro) {
+                    console.error('Erro ao carregar perfil:', erro);
+                    this.perfil = {
+                        nome: this.nomeUsuario,
+                        email: '',
+                        endereco: '',
+                        telefone: '',
+                        dataCadastro: new Date().toISOString()
+                    };
+                }
+            }
+
+            configurarEventos() {
+                // Editar orçamento
+                document.getElementById('btnEditarOrcamento').addEventListener('click', () => this.abrirModalEditarOrcamento());
+                document.getElementById('btnSalvarOrcamento').addEventListener('click', () => this.salvarOrcamento());
+                document.getElementById('btnCancelarOrcamento').addEventListener('click', () => this.fecharModal('modalEditarOrcamento'));
+
+                // Escolher mercado
+                document.getElementById('btnEscolherMercado').addEventListener('click', () => this.abrirModalEscolherMercado());
+                document.getElementById('btnTrocarMercado').addEventListener('click', () => this.abrirModalEscolherMercado());
+                document.getElementById('btnConfirmarMercado').addEventListener('click', () => this.confirmarMercado());
+                document.getElementById('btnCancelarMercado').addEventListener('click', () => this.fecharModal('modalEscolherMercado'));
+
+                // Opções de mercado
+                document.querySelectorAll('.opcao-mercado').forEach(opcao => {
+                    opcao.addEventListener('click', () => {
+                        document.querySelectorAll('.opcao-mercado').forEach(o => o.classList.remove('selecionado'));
+                        opcao.classList.add('selecionado');
+                        document.getElementById('inputMercadoCustomizado').value = '';
+                    });
+                });
+
+                // Entrada customizada
+                document.getElementById('inputMercadoCustomizado').addEventListener('input', () => {
+                    if (document.getElementById('inputMercadoCustomizado').value.trim()) {
+                        document.querySelectorAll('.opcao-mercado').forEach(o => o.classList.remove('selecionado'));
+                    }
+                });
+
+                // Adicionar item
+                document.getElementById('btnAdicionar').addEventListener('click', () => this.adicionarItem());
+                document.getElementById('inputProduto').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.adicionarItem();
+                });
+
+                // Editar usuário
+                document.getElementById('btnEditarUsuario').addEventListener('click', () => this.abrirModalEditarUsuario());
+                document.getElementById('btnSalvarUsuario').addEventListener('click', () => this.salvarPerfilUsuario());
+                document.getElementById('btnCancelarUsuario').addEventListener('click', () => this.fecharModal('modalEditarUsuario'));
+
+                // Abas
+                document.querySelectorAll('.aba').forEach(aba => {
+                    aba.addEventListener('click', (e) => {
+                        this.mudarAba(e.target.closest('.aba').dataset.aba);
+                    });
+                });
+
+                // Abas do modal
+                document.querySelectorAll('.aba-modal').forEach(aba => {
+                    aba.addEventListener('click', (e) => {
+                        this.mudarAbaModal(e.target.closest('.aba-modal').dataset.abaModal);
+                    });
+                });
+
+                // Ações
+                document.getElementById('btnCompartilhar').addEventListener('click', () => this.abrirModalCompartilhamento());
+                document.getElementById('btnRelatorio').addEventListener('click', () => this.abrirModalRelatorio());
+                document.getElementById('btnLimparComprados').addEventListener('click', () => this.limparComprados());
+                document.getElementById('btnFecharModal').addEventListener('click', () => this.fecharModal('modalCompartilhamento'));
+                document.getElementById('btnFecharRelatorio').addEventListener('click', () => this.fecharModal('modalRelatorio'));
+                document.getElementById('btnCopiarCodigo').addEventListener('click', () => this.copiarCodigo());
+                document.getElementById('btnConectar').addEventListener('click', () => this.conectarLista());
+                document.getElementById('btnExportarPDF').addEventListener('click', () => this.exportarPDF());
+                document.getElementById('btnExportarTXT').addEventListener('click', () => this.exportarTXT());
+
+                // Modal de edição
+                document.getElementById('btnSalvarEdicao').addEventListener('click', () => this.salvarEdicao());
+                document.getElementById('btnCancelarEdicao').addEventListener('click', () => this.fecharModal('modalEdicao'));
+
+                // Sugestões
+                document.getElementById('btnSugestoes').addEventListener('click', () => this.toggleSugestoes());
+                document.getElementById('inputProduto').addEventListener('input', (e) => this.filtrarSugestoes(e.target.value));
+                document.getElementById('inputProduto').addEventListener('blur', () => {
+                    setTimeout(() => {
+                        document.getElementById('dropdownSugestoes').classList.remove('ativo');
+                    }, 200);
+                });
+
+                // Detectar mudanças de foco
+                window.addEventListener('focus', () => {
+                    this.verificarAtualizacoes();
+                });
+
+                // Fechar dropdowns ao clicar fora
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.input-group')) {
+                        document.getElementById('dropdownSugestoes').classList.remove('ativo');
+                    }
+                });
+            }
+
+            abrirModalEscolherMercado() {
+                document.querySelectorAll('.opcao-mercado').forEach(o => o.classList.remove('selecionado'));
+                document.getElementById('inputMercadoCustomizado').value = '';
+
+                // Marcar mercado selecionado se houver
+                if (this.mercadoSelecionado) {
+                    const opcao = document.querySelector(`[data-mercado="${this.mercadoSelecionado}"]`);
+                    if (opcao) {
+                        opcao.classList.add('selecionado');
+                    } else {
+                        document.getElementById('inputMercadoCustomizado').value = this.mercadoSelecionado;
+                    }
+                }
+
+                this.abrirModal('modalEscolherMercado');
+            }
+
+            async confirmarMercado() {
+                const mercadoSelecionado = document.querySelector('.opcao-mercado.selecionado');
+                const mercadoCustomizado = document.getElementById('inputMercadoCustomizado').value.trim();
+
+                let mercado = '';
+
+                if (mercadoCustomizado) {
+                    mercado = mercadoCustomizado;
+                } else if (mercadoSelecionado) {
+                    mercado = mercadoSelecionado.dataset.mercado;
+                } else {
+                    this.mostrarToast('Escolha ou digite um mercado', 'erro');
+                    return;
+                }
+
+                this.mercadoSelecionado = mercado;
+
+                try {
+                    await this.db.salvarMercado(this.idLista, mercado);
+                    localStorage.setItem(`mercado_${this.idLista}`, mercado);
+                    
+                    this.atualizarMercadoAtivo();
+                    this.fecharModal('modalEscolherMercado');
+                    this.mostrarToast(`Mercado alterado para: ${mercado}`, 'sucesso');
+                } catch (erro) {
+                    console.error('Erro ao salvar mercado:', erro);
+                    this.mostrarToast('Erro ao salvar mercado', 'erro');
+                }
+            }
+
+            atualizarMercadoAtivo() {
+                const secao = document.getElementById('secaoMercadoAtivo');
+                const nomeDisplay = document.getElementById('mercadoAtivoNome');
+                const fieldDisplay = document.getElementById('mercadoAtualDisplay');
+
+                if (this.mercadoSelecionado) {
+                    secao.style.display = 'flex';
+                    nomeDisplay.textContent = this.mercadoSelecionado;
+                    fieldDisplay.value = this.mercadoSelecionado;
+                } else {
+                    secao.style.display = 'none';
+                    fieldDisplay.value = 'Nenhum mercado escolhido';
+                }
+            }
+
+            abrirModalEditarOrcamento() {
+                document.getElementById('editOrcamento').value = this.orcamento;
+                document.getElementById('displayOrcamentoAtual').textContent = `R$ ${this.orcamento.toFixed(2)}`;
+                
+                const gasto = this.calcularGasto();
+                document.getElementById('displayGastoAtual').textContent = `R$ ${gasto.toFixed(2)}`;
+                document.getElementById('displayDisponivel').textContent = `R$ ${(this.orcamento - gasto).toFixed(2)}`;
+                
+                this.abrirModal('modalEditarOrcamento');
+            }
+
+            async salvarOrcamento() {
+                const valor = parseFloat(document.getElementById('editOrcamento').value) || 0;
+                
+                if (valor < 0) {
+                    this.mostrarToast('Digite um valor válido', 'erro');
+                    return;
+                }
+
+                this.orcamento = valor;
+                
+                try {
+                    await this.db.salvarOrcamento(this.idLista, this.orcamento);
+                    localStorage.setItem(`orcamento_${this.idLista}`, this.orcamento.toString());
+                    
+                    this.atualizarUI();
+                    this.fecharModal('modalEditarOrcamento');
+                    this.mostrarToast('Orçamento atualizado com sucesso', 'sucesso');
+                } catch (erro) {
+                    console.error('Erro ao salvar orçamento:', erro);
+                    this.mostrarToast('Erro ao salvar orçamento', 'erro');
+                }
+            }
+
+            abrirModalEditarUsuario() {
+                document.getElementById('editNomeUsuario').value = this.perfil.nome || '';
+                document.getElementById('editEmailUsuario').value = this.perfil.email || '';
+                document.getElementById('editEnderecoUsuario').value = this.perfil.endereco || '';
+                document.getElementById('editTelefoneUsuario').value = this.perfil.telefone || '';
+                document.getElementById('displayIdLista').textContent = this.idLista;
+                document.getElementById('displayDataCadastro').textContent = 
+                    new Date(this.perfil.dataCadastro || Date.now()).toLocaleDateString('pt-BR');
+
+                this.abrirModal('modalEditarUsuario');
+            }
+
+            async salvarPerfilUsuario() {
+                const nome = document.getElementById('editNomeUsuario').value.trim();
+                
+                if (!nome) {
+                    this.mostrarToast('Digite um nome válido', 'erro');
+                    return;
+                }
+
+                this.perfil = {
+                    ...this.perfil,
+                    nome: nome,
+                    email: document.getElementById('editEmailUsuario').value.trim(),
+                    endereco: document.getElementById('editEnderecoUsuario').value.trim(),
+                    telefone: document.getElementById('editTelefoneUsuario').value.trim()
+                };
+
+                try {
+                    await this.db.salvarPerfilUsuario(this.idLista, this.perfil);
+                    localStorage.setItem('nomeUsuario', nome);
+                    this.nomeUsuario = nome;
+                    
+                    this.atualizarUsuarioInfo();
+                    this.preencherSelectAtribuidores();
+                    this.fecharModal('modalEditarUsuario');
+                    this.mostrarToast('Perfil atualizado com sucesso', 'sucesso');
+                } catch (erro) {
+                    console.error('Erro ao salvar perfil:', erro);
+                    this.mostrarToast('Erro ao salvar perfil', 'erro');
+                }
+            }
+
+            mudarAbaModal(aba) {
+                document.querySelectorAll('.aba-modal').forEach(el => el.classList.remove('ativa'));
+                document.querySelector(`[data-aba-modal="${aba}"]`).classList.add('ativa');
+
+                document.querySelectorAll('.conteudo-aba-modal').forEach(el => el.classList.remove('ativo'));
+                document.getElementById(`aba${aba.charAt(0).toUpperCase() + aba.slice(1)}`).classList.add('ativo');
+            }
+
+            calcularGasto() {
+                return this.items
+                    .filter(i => i.comprado)
+                    .reduce((sum, i) => sum + (i.preco * i.quantidade), 0);
+            }
+
+            calcularTotal() {
+                return this.items.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+            }
+
+            atualizarOrcamento() {
+                const gasto = this.calcularGasto();
+                const restante = Math.max(0, this.orcamento - gasto);
+                const percentualGasto = this.orcamento > 0 ? (gasto / this.orcamento) * 100 : 0;
+
+                document.getElementById('valorOrcamento').textContent = `R$ ${this.orcamento.toFixed(2)}`;
+                document.getElementById('valorGasto').textContent = `R$ ${gasto.toFixed(2)}`;
+                document.getElementById('valorRestante').textContent = `R$ ${restante.toFixed(2)}`;
+
+                const barra = document.getElementById('barraProgresso');
+                barra.style.width = Math.min(percentualGasto, 100) + '%';
+
+                barra.classList.remove('alerta', 'perigo');
+
+                if (percentualGasto > 100) {
+                    barra.classList.add('perigo');
+                } else if (percentualGasto > 80) {
+                    barra.classList.add('alerta');
+                }
+
+                const aviso = document.getElementById('avisoOrcamento');
+                aviso.classList.remove('alerta', 'perigo');
+
+                if (this.orcamento > 0) {
+                    if (percentualGasto > 100) {
+                        aviso.classList.add('perigo');
+                        aviso.innerHTML = `⚠️ <strong>Orçamento excedido!</strong> Você gastou R$ ${(gasto - this.orcamento).toFixed(2)} acima do limite.`;
+                    } else if (percentualGasto > 80) {
+                        aviso.classList.add('alerta');
+                        aviso.innerHTML = `⚡ <strong>Atenção!</strong> Você já utilizou ${percentualGasto.toFixed(1)}% do seu orçamento. Restam R$ ${restante.toFixed(2)}.`;
+                    }
+                }
+            }
+
+            async adicionarItem() {
+                const produto = document.getElementById('inputProduto').value.trim();
+                const quantidade = parseFloat(document.getElementById('inputQuantidade').value) || 1;
+                const unidade = document.getElementById('inputUnidade').value || 'unidade';
+                const preco = parseFloat(document.getElementById('inputPreco').value) || 0;
+                const categoria = document.getElementById('inputCategoria').value;
+                const atribuidor = document.getElementById('inputAtribuidor').value || this.nomeUsuario;
+
+                if (!produto) {
+                    this.mostrarToast('Digite um produto', 'erro');
+                    return;
+                }
+
+                if (quantidade <= 0) {
+                    this.mostrarToast('Quantidade deve ser maior que 0', 'erro');
+                    return;
+                }
+
+                if (!this.mercadoSelecionado) {
+                    this.mostrarToast('Escolha um mercado primeiro', 'erro');
+                    return;
+                }
+
+                const item = {
+                    id: 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                    produto,
+                    quantidade,
+                    unidade,
+                    preco,
+                    categoria,
+                    mercado: this.mercadoSelecionado,
+                    comprado: false,
+                    dataCriacao: new Date().toISOString(),
+                    usuarioCriou: this.nomeUsuario,
+                    atribuidor: atribuidor,
+                    ultimaAtualizacao: new Date().toISOString()
+                };
+
+                this.items.push(item);
+                await this.salvarDados();
+                this.gerador.items = this.items;
+                this.atualizarUI();
+                this.limparFormulario();
+                this.mostrarToast(`${produto} adicionado à lista`, 'sucesso');
+            }
+
+            async editarItem(id) {
+                this.itemEmEdicao = this.items.find(item => item.id === id);
+                if (!this.itemEmEdicao) return;
+
+                document.getElementById('editProduto').value = this.itemEmEdicao.produto;
+                document.getElementById('editQuantidade').value = this.itemEmEdicao.quantidade;
+                document.getElementById('editUnidade').value = this.itemEmEdicao.unidade || 'unidade';
+                document.getElementById('editPreco').value = this.itemEmEdicao.preco;
+                document.getElementById('editCategoria').value = this.itemEmEdicao.categoria;
+                document.getElementById('editMercado').value = this.itemEmEdicao.mercado;
+                document.getElementById('editAtribuidor').value = this.itemEmEdicao.atribuidor || this.nomeUsuario;
+
+                this.abrirModal('modalEdicao');
+            }
+
+            async salvarEdicao() {
+                if (!this.itemEmEdicao) return;
+
+                const produtoAnterior = this.itemEmEdicao.produto;
+                this.itemEmEdicao.produto = document.getElementById('editProduto').value;
+                this.itemEmEdicao.quantidade = parseFloat(document.getElementById('editQuantidade').value);
+                this.itemEmEdicao.unidade = document.getElementById('editUnidade').value;
+                this.itemEmEdicao.preco = parseFloat(document.getElementById('editPreco').value) || 0;
+                this.itemEmEdicao.categoria = document.getElementById('editCategoria').value;
+                this.itemEmEdicao.mercado = document.getElementById('editMercado').value || this.itemEmEdicao.mercado;
+                this.itemEmEdicao.atribuidor = document.getElementById('editAtribuidor').value || this.nomeUsuario;
+                this.itemEmEdicao.ultimaAtualizacao = new Date().toISOString();
+
+                await this.salvarDados();
+                this.gerador.items = this.items;
+                this.atualizarUI();
+                this.fecharModal('modalEdicao');
+                this.mostrarToast('Item atualizado com sucesso', 'sucesso');
+            }
+
+            async deletarItem(id) {
+                const item = this.items.find(i => i.id === id);
+                if (!item) return;
+
+                if (confirm(`Tem certeza que deseja deletar "${item.produto}"?`)) {
+                    this.items = this.items.filter(item => item.id !== id);
+                    await this.salvarDados();
+                    this.gerador.items = this.items;
+                    this.atualizarUI();
+                    this.mostrarToast('Item deletado', 'sucesso');
+                }
+            }
+
+            async toggleComprado(id) {
+                const item = this.items.find(item => item.id === id);
+                if (item) {
+                    item.comprado = !item.comprado;
+                    item.ultimaAtualizacao = new Date().toISOString();
+                    await this.salvarDados();
+                    this.gerador.items = this.items;
+                    this.atualizarUI();
+                    this.atualizarOrcamento();
+                }
+            }
+
+            async limparComprados() {
+                const comprados = this.items.filter(item => item.comprado);
+                if (comprados.length === 0) {
+                    this.mostrarToast('Nenhum item comprado', 'erro');
+                    return;
+                }
+
+                if (confirm(`Deseja remover ${comprados.length} item(ns) comprado(s)?`)) {
+                    this.items = this.items.filter(item => !item.comprado);
+                    await this.salvarDados();
+                    this.gerador.items = this.items;
+                    this.atualizarUI();
+                    this.mostrarToast('Itens comprados removidos', 'sucesso');
+                }
+            }
+
+            mudarAba(aba) {
+                this.abaAtiva = aba;
+                document.querySelectorAll('.aba').forEach(el => el.classList.remove('ativa'));
+                document.querySelector(`[data-aba="${aba}"]`).classList.add('ativa');
+                this.atualizarUI();
+            }
+
+            atualizarUI() {
+                this.renderizarLista();
+                this.atualizarStats();
+                this.atualizarOrcamento();
+            }
+
+            obterFormatoUnidade(unidade) {
+                const formatos = {
+                    'unidade': 'unidade(s)',
+                    'kg': 'kg',
+                    'g': 'g',
+                    'l': 'litro(s)',
+                    'ml': 'ml',
+                    'dz': 'dúzia(s)',
+                    'pct': 'pacote(s)',
+                    'caixa': 'caixa(s)'
+                };
+                return formatos[unidade] || unidade;
+            }
+
+            renderizarLista() {
+                const lista = document.getElementById('listaCompras');
+                const listaVazia = document.getElementById('listaVazia');
+                lista.innerHTML = '';
+
+                let itemsFiltrados = this.items;
+
+                if (this.abaAtiva === 'pendentes') {
+                    itemsFiltrados = this.items.filter(item => !item.comprado);
+                } else if (this.abaAtiva === 'comprados') {
+                    itemsFiltrados = this.items.filter(item => item.comprado);
+                }
+
+                if (itemsFiltrados.length === 0) {
+                    listaVazia.style.display = 'block';
+                    return;
+                }
+
+                listaVazia.style.display = 'none';
+
+                itemsFiltrados.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = `item-compra ${item.comprado ? 'comprado' : ''}`;
+                    
+                    const preco = item.preco > 0 ? ` - R$ ${(item.preco * item.quantidade).toFixed(2)}` : '';
+                    const categoria = item.categoria ? `<span class="item-categoria">${item.categoria}</span>` : '';
+                    const mercado = item.mercado ? `<span class="item-mercado">🏪 ${item.mercado}</span>` : '';
+                    const atribuidor = item.atribuidor ? `<span class="item-usuario">👤 ${item.atribuidor}</span>` : '';
+                    const unidade = this.obterFormatoUnidade(item.unidade);
+                    
+                    li.innerHTML = `
+                        <input 
+                            type="checkbox" 
+                            class="checkbox" 
+                            ${item.comprado ? 'checked' : ''}
+                            onchange="app.toggleComprado('${item.id}')"
+                        >
+                        <div class="item-info">
+                            <div class="item-nome">${item.produto}</div>
+                            <div class="item-detalhes">
+                                <span>📦 ${item.quantidade} ${unidade}</span>
+                                ${categoria}
+                                ${atribuidor}
+                                ${mercado}
+                                ${preco}
+                            </div>
+                        </div>
+                        <div class="item-acoes">
+                            <button class="btn-icone btn-editar" onclick="app.editarItem('${item.id}')" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icone btn-deletar" onclick="app.deletarItem('${item.id}')" title="Deletar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                    lista.appendChild(li);
+                });
+            }
+
+            atualizarStats() {
+                const total = this.items.length;
+                const comprados = this.items.filter(item => item.comprado).length;
+                const preco = this.calcularTotal();
+
+                document.getElementById('totalItens').textContent = total;
+                document.getElementById('totalComprado').textContent = comprados;
+                document.getElementById('totalPreco').textContent = 'R$ ' + preco.toFixed(2);
+            }
+
+            async salvarDados() {
+                try {
+                    await this.db.salvarItens(this.idLista, this.items);
+                    localStorage.setItem(`compras_${this.idLista}`, JSON.stringify(this.items));
+                } catch (erro) {
+                    console.error('Erro ao salvar dados:', erro);
+                }
+            }
+
+            async carregarDados() {
+                try {
+                    this.items = await this.db.obterItens(this.idLista);
+                    if (this.items.length === 0) {
+                        const dados = localStorage.getItem(`compras_${this.idLista}`);
+                        this.items = dados ? JSON.parse(dados) : [];
+                    }
+                } catch (erro) {
+                    console.error('Erro ao carregar dados:', erro);
+                    this.items = [];
+                }
+            }
+
+            async verificarAtualizacoes() {
+                try {
+                    const dadosNovos = await this.db.obterItens(this.idLista);
+                    if (JSON.stringify(dadosNovos) !== JSON.stringify(this.items)) {
+                        this.items = dadosNovos;
+                        this.gerador.items = this.items;
+                        this.atualizarUI();
+                    }
+                } catch (erro) {
+                    console.error('Erro ao verificar atualizações:', erro);
+                }
+            }
+
+            limparFormulario() {
+                document.getElementById('inputProduto').value = '';
+                document.getElementById('inputQuantidade').value = '1';
+                document.getElementById('inputUnidade').value = 'unidade';
+                document.getElementById('inputPreco').value = '';
+                document.getElementById('inputCategoria').value = '';
+                document.getElementById('inputAtribuidor').value = this.nomeUsuario;
+                document.getElementById('inputProduto').focus();
+                document.getElementById('dropdownSugestoes').classList.remove('ativo');
+            }
+
+            abrirModal(idModal) {
+                document.getElementById(idModal).classList.add('ativo');
+            }
+
+            fecharModal(idModal) {
+                document.getElementById(idModal).classList.remove('ativo');
+            }
+
+            async abrirModalCompartilhamento() {
+                this.abrirModal('modalCompartilhamento');
+                document.getElementById('codigoCompartilhamento').value = this.idLista;
+                await this.atualizarUsuariosConectados();
+            }
+
+            copiarCodigo() {
+                const codigo = document.getElementById('codigoCompartilhamento').value;
+                navigator.clipboard.writeText(codigo).then(() => {
+                    this.mostrarToast('Código copiado! 📋', 'sucesso');
+                }).catch(() => {
+                    this.mostrarToast('Erro ao copiar código', 'erro');
+                });
+            }
+
+            async conectarLista() {
+                const codigo = document.getElementById('codigoConexao').value.trim().toUpperCase();
+                if (!codigo) {
+                    this.mostrarToast('Digite um código válido', 'erro');
+                    return;
+                }
+
+                document.getElementById('sincronizacaoInfo').style.display = 'block';
+
+                try {
+                    localStorage.setItem('idLista', codigo);
+                    this.idLista = codigo;
+                    await this.carregarDados();
+                    await this.carregarOrcamento();
+                    await this.carregarMercado();
+                    await this.carregarPerfilUsuario();
+                    this.gerador.items = this.items;
+                    
+                    this.atualizarUI();
+                    this.atualizarMercadoAtivo();
+                    this.mostrarToast('Conectado à lista compartilhada! 🎉', 'sucesso');
+                    document.getElementById('codigoConexao').value = '';
+                    
+                    setTimeout(() => {
+                        document.getElementById('sincronizacaoInfo').style.display = 'none';
+                        this.fecharModal('modalCompartilhamento');
+                    }, 1000);
+                } catch (erro) {
+                    document.getElementById('sincronizacaoInfo').style.display = 'none';
+                    this.mostrarToast('Erro ao conectar à lista', 'erro');
+                    console.error(erro);
+                }
+            }
+
+            async atualizarUsuariosConectados() {
+                const usuarios = await this.obterUsuariosConectados();
+                const container = document.getElementById('usuariosConectados');
+                
+                if (usuarios.length === 0) {
+                    container.innerHTML = '<p style="color: #999; margin: 0;">Nenhum usuário conectado</p>';
+                    return;
+                }
+
+                container.innerHTML = usuarios.map((usuario) => `
+                    <div class="usuario-item">
+                        <div class="status-online"></div>
+                        <span>${usuario}</span>
+                    </div>
+                `).join('');
+            }
+
+            async obterUsuariosConectados() {
+                try {
+                    let usuarios = await this.db.obterUsuarios(this.idLista);
+                    if (usuarios.length === 0) {
+                        usuarios = JSON.parse(localStorage.getItem(`usuarios_${this.idLista}`) || '[]');
+                    }
+
+                    if (!usuarios.includes(this.nomeUsuario)) {
+                        usuarios.push(this.nomeUsuario);
+                        await this.db.salvarUsuarios(this.idLista, usuarios);
+                        localStorage.setItem(`usuarios_${this.idLista}`, JSON.stringify(usuarios));
+                    }
+
+                    return usuarios;
+                } catch (erro) {
+                    console.error('Erro ao obter usuários:', erro);
+                    return [this.nomeUsuario];
+                }
+            }
+
+            async abrirModalRelatorio() {
+                this.abrirModal('modalRelatorio');
+                document.getElementById('dataRelatorio').textContent = new Date().toLocaleDateString('pt-BR');
+                
+                setTimeout(() => {
+                    if (this.items.length > 0) {
+                        this.gerador.gerarGraficoCategoria('graficoCategoria');
+                        this.gerador.gerarGraficoMercado('graficoMercado');
+                        this.gerador.gerarGraficoStatus('graficoStatus');
+                    }
+                    
+                    document.getElementById('relatorioContent').innerHTML = this.gerador.gerarResumo();
+                }, 100);
+            }
+
+            exportarPDF() {
+                this.mostrarToast('Gerando PDF...', 'info');
+                setTimeout(() => {
+                    this.gerador.exportarPDF();
+                }, 500);
+            }
+
+            exportarTXT() {
+                this.mostrarToast('Exportando TXT...', 'info');
+                setTimeout(() => {
+                    this.gerador.exportarTXT();
+                    this.mostrarToast('Arquivo TXT baixado com sucesso! 📥', 'sucesso');
+                }, 500);
+            }
+
+            toggleSugestoes() {
+                const dropdown = document.getElementById('dropdownSugestoes');
+                dropdown.classList.toggle('ativo');
+                if (dropdown.classList.contains('ativo')) {
+                    this.renderizarSugestoes(this.sugestoes);
+                }
+            }
+
+            filtrarSugestoes(valor) {
+                const dropdown = document.getElementById('dropdownSugestoes');
+                
+                if (!valor.trim()) {
+                    dropdown.classList.remove('ativo');
+                    return;
+                }
+
+                const filtrados = this.sugestoes.filter(s =>
+                    s.toLowerCase().includes(valor.toLowerCase())
+                );
+
+                this.renderizarSugestoes(filtrados);
+                dropdown.classList.add('ativo');
+            }
+
+            renderizarSugestoes(sugestoes) {
+                const dropdown = document.getElementById('dropdownSugestoes');
+                if (sugestoes.length === 0) {
+                    dropdown.innerHTML = '<li style="padding: 10px; color: #999;">Nenhuma sugestão encontrada</li>';
+                    return;
+                }
+
+                dropdown.innerHTML = sugestoes.map(sugestao => `
+                    <li onclick="app.selecionarSugestao('${sugestao}')">${sugestao}</li>
+                `).join('');
+            }
+
+            selecionarSugestao(sugestao) {
+                document.getElementById('inputProduto').value = sugestao;
+                document.getElementById('dropdownSugestoes').classList.remove('ativo');
+                document.getElementById('inputQuantidade').focus();
+            }
+
+            preencherSelectAtribuidores() {
+                const selectEntrada = document.getElementById('inputAtribuidor');
+                selectEntrada.innerHTML = `<option value="${this.nomeUsuario}">👤 ${this.nomeUsuario}</option>`;
+
+                const selectEdicao = document.getElementById('editAtribuidor');
+                selectEdicao.innerHTML = '<option value="">Não atribuído</option>';
+                const option = document.createElement('option');
+                option.value = this.nomeUsuario;
+                option.textContent = this.nomeUsuario;
+                selectEdicao.appendChild(option);
+            }
+
+            mostrarToast(mensagem, tipo = 'sucesso') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${tipo}`;
+                toast.innerHTML = `
+                    <i class="fas fa-${tipo === 'sucesso' ? 'check-circle' : tipo === 'erro' ? 'exclamation-circle' : tipo === 'alerta' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                    ${mensagem}
+                `;
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.remove();
+                }, 3000);
+            }
+
+            atualizarUsuarioInfo() {
+                document.getElementById('usuarioNomeDisplay').textContent = this.perfil.nome || this.nomeUsuario;
+                document.getElementById('usuarioEmailDisplay').textContent = this.perfil.email || 'Email não informado';
+            }
+
+            verificarConexao() {
+                const statusConexao = document.getElementById('statusConexao');
+                
+                const atualizar = () => {
+                    const online = navigator.onLine;
+                    statusConexao.className = `status-conexao ${online ? 'online' : 'offline'}`;
+                    statusConexao.innerHTML = `
+                        <i class="fas fa-circle"></i> 
+                        ${online ? 'Online' : 'Offline'}
+                    `;
+                };
+
+                atualizar();
+                window.addEventListener('online', atualizar);
+                window.addEventListener('offline', atualizar);
+            }
+
+            iniciarSincronizacao() {
+                setInterval(() => {
+                    this.verificarAtualizacoes();
+                }, 2000);
+
+                window.addEventListener('storage', (e) => {
+                    if (e.key && e.key.startsWith('compras_')) {
+                        this.carregarDados().then(() => {
+                            this.gerador.items = this.items;
+                            this.atualizarUI();
+                        });
+                    }
+                });
+            }
+        }
+
+        // INICIAR APP
+        let app;
+        document.addEventListener('DOMContentLoaded', async () => {
+            app = new AppCompras();
+        });
+
+        // Fechar modais ao clicar fora
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('ativo');
+                }
+            });
+        });
+
+        // Impedir que o app feche sem avisar
+        window.addEventListener('beforeunload', (e) => {
+            if (app && app.items.length > 0 && app.items.some(i => !i.comprado)) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    </script>
+</body>
+</html>
